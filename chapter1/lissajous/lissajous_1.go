@@ -31,8 +31,8 @@ func lissajous(out io.Writer) {
 		delay   = 8
 	)
 
-	palette = append(palette, color.White)
 	palette = append(palette, color.Black)
+	palette = append(palette, color.RGBA{0x00, 0xaa, 0x00, 0xff})
 
 	rand.Seed(time.Now().UTC().UnixNano())
 	freq := rand.Float64() * 3.0
