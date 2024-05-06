@@ -25,32 +25,20 @@ func main() {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	// if err := r.ParseForm(); err != nil {
-	// 	log.Print(err)
-	// }
 	cycles, err := strconv.Atoi(r.FormValue("cycles"))
 	if err != nil {
 		cycles = 5
 	}
-	// if cycles == 0 {
-	// 	cycles = 5
-	// }
 	size, err := strconv.Atoi(r.FormValue("size"))
 	if err != nil {
-		// log.Print(err)
 		size = 100
 	}
-	// if cycles == 0 {
-	// 	cycles = 5
-	// }
 	lissajous(w, cycles, size)
 }
 
 func lissajous(out io.Writer, cycles, size int) {
 	const (
-		// cycles  = 5
 		res     = 0.001
-		// size    = 100
 		nframes = 64
 		delay   = 8
 	)
