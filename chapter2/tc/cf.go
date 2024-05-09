@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/glaurungh/golang_learning/chapter2/tc/tempconv"
 	"os"
 	"strconv"
+
+	"golang_learning/chapter2/tc/tempconv"
 )
 
 func main() {
