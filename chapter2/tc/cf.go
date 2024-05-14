@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	"golang_learning/chapter2/tc/tempconv"
+	"tc/tempconv"
 )
 
 func main() {
