@@ -2,13 +2,20 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
+	"time"
+
+	"phonebook/book"
+	"phonebook/logger"
 )
 
+type handler func(book.PhoneBook, []string) error
+
 func main() {
-	phoneBook := make(map[string]string)
+	phoneBook := make(book.PhoneBook)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Welcome to phonebook")
@@ -23,48 +30,122 @@ func main() {
 
 		input := scanner.Text()
 		parts := strings.SplitN(input, " ", 2)
-		command := parts[0]
+		command, args := parts[0], parts[1:]
 
 		switch command {
-		case "add", "update":
-			record := strings.SplitN(parts[1], "=", 2)
-			if len(record) != 2 {
-				fmt.Println("Invalid format. Use: add name=number")
-				continue
-			}
-			name, number := record[0], record[1]
-			phoneBook[name] = number
-			fmt.Printf("Added/Updated: %s -> %s\n", name, number)
+		case "add":
+			handleCommand(phoneBook, doAdd, args)
+		case "update":
+			handleCommand(phoneBook, doUpdate, args)
 		case "get":
-			name := parts[1]
-			number, exists := phoneBook[name]
-			if !exists {
-				fmt.Printf("Number for %s not found\n", name)
-			} else {
-				fmt.Printf("Number for %s is %s\n", name, number)
-			}
+			handleCommand(phoneBook, doGet, args)
 		case "delete":
-			name := parts[1]
-			_, exists := phoneBook[name]
-			if !exists {
-				fmt.Printf("Number for %s not found\n", name)
-			} else {
-				delete(phoneBook, name)
-				fmt.Printf("Number for %s has been deleted\n", name)
-			}
+			handleCommand(phoneBook, doDelete, args)
 		case "list":
-			if len(phoneBook) == 0 {
-				fmt.Println("Phonebook is empty")
-			} else {
-				for name, phone := range phoneBook {
-					fmt.Printf("%s -> %s\n", name, phone)
-				}
-			}
+			handleCommand(phoneBook, doList, args)
 		case "exit":
-			fmt.Println("Exiting phonebook...")
+			logger.Info("Exiting phonebook...")
 			return
 		default:
-			fmt.Println("Unsupported command. Try 'add', 'get', 'delete', 'update', 'list' or 'exit'")
+			logger.Warn(errors.New("unsupported command. Try 'add', 'get', 'delete', 'update', 'list' or 'exit'"))
 		}
 	}
+}
+
+func handleCommand(book book.PhoneBook, cmd handler, args []string) {
+	if err := cmd(book, args); err != nil {
+		logger.Warn(err, "command failed")
+	}
+}
+
+func doGet(book book.PhoneBook, args []string) error {
+	if len(args) < 1 {
+		return errors.New("invalid format. Use: get name")
+	}
+
+	name := args[0]
+
+	record, err := book.Get(name)
+	if err != nil {
+		return err
+	}
+
+	unixUpdatedAt := time.Unix(record.LastUpdatedAt, 0)
+
+	logger.Info(
+		fmt.Sprintf(
+			"Number for %s is %s (last upated at %s)\n",
+			name,
+			record.Number,
+			unixUpdatedAt.Format("2006-01-02 15:04:05"),
+		),
+	)
+
+	return nil
+}
+
+func doList(book book.PhoneBook, _ []string) error {
+	if len(book) == 0 {
+		return errors.New("phonebook is empty")
+	} else {
+		for name, record := range book {
+			logger.Info(
+				fmt.Sprintf(
+					"%s -> %s (updated at: %s)\n",
+					name,
+					record.Number,
+					time.Unix(record.LastUpdatedAt, 0).Format("2006-01-02 15:04:05"),
+				),
+			)
+		}
+	}
+	return nil
+}
+
+func doAdd(book book.PhoneBook, args []string) error {
+	record := strings.SplitN(args[0], "=", 2)
+	if len(record) != 2 {
+		return errors.New("invalid format. Use: add name=number")
+	}
+	name, number := record[0], record[1]
+	err := book.Add(name, number)
+	if err != nil {
+		return err
+	}
+	logger.Info(fmt.Sprintf("Added an entry: %s -> %s\n", name, number))
+	return nil
+}
+
+func doUpdate(book book.PhoneBook, args []string) error {
+	record := strings.SplitN(args[0], "=", 2)
+	if len(record) != 2 {
+		return errors.New("invalid format. Use: update name=number")
+	}
+	name, number := record[0], record[1]
+	err := book.Update(name, number)
+	if err != nil {
+		return err
+	}
+	logger.Info(
+		fmt.Sprintf(
+			"Updated an entry: %s -> %s\n",
+			name,
+			number,
+		),
+	)
+	return nil
+}
+
+func doDelete(book book.PhoneBook, args []string) error {
+	if len(args) < 1 {
+		return errors.New("invalid format. Use: delete name")
+	}
+
+	name := args[0]
+
+	err := book.Delete(name)
+	if err != nil {
+		return err
+	}
+	return nil
 }
