@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -10,7 +9,7 @@ import (
 func main() {
 	counts := make(map[string]int)
 	for _, fname := range os.Args[1:] {
-		data, err := ioutil.ReadFile(fname)
+		data, err := os.ReadFile(fname)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "dup3: %v\n", err)
 			continue
